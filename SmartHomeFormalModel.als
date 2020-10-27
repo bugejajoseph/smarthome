@@ -3,8 +3,12 @@ abstract sig NodeType {}
 sig ConnectedDevice, MobileDevice, Gateway, Backend extends NodeType {}
 sig Cloud extends Backend {}
 
-enum Capability {Storage, Processing, RemoteAdmin}
-enum Role {Owner, Family, Guest}
+//enum Capability {Storage, Processing, RemoteAdmin}
+
+enum Capability {GatewayFunctionality, BatterySource, IntegratedSensors, IntegratedActuators, WirelessProtocols, WiredProtocols, CloudServer, API, IFTTT, WebBrowserAccessibility, SmartphoneAccessibility, RemoteAccess}
+
+enum Role {DataSubject, DataController, DataUser}
+//enum Role {Owner, Family, Guest}
 
 //abstract sig Context {}
 
@@ -45,8 +49,19 @@ sig Link {
 fact "Policy" {
     all x: Link | x.from != x.to  // no links from a host to itself
 
-    all u: User |    // user cannot be both a guest and an owner or have family role
-	Guest in u.is implies Owner not in u.is && Family not in u.is 
+    // make each role exclusive
+    all u: User |   
+	DataSubject in u.is implies DataController not in u.is && DataUser not in u.is 
+
+    all u: User |   
+	DataController in u.is implies DataSubject not in u.is && DataUser not in u.is 
+
+    all u: User |    
+	DataUser in u.is implies DataSubject not in u.is && DataController not in u.is 
+
+    // limit number of capabilities to 3 (for simplicity)
+    all n: Node |
+	#n.implements <= 3  
 }
 
 fact "Home setup" {
