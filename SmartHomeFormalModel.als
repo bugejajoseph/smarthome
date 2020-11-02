@@ -1,21 +1,25 @@
 ////////////////////////////// SMART HOME MODEL SPECIFICATION ///////////////////
 abstract sig NodeType {}
-sig ConnectedDevice, MobileDevice, Gateway, Backend extends NodeType {}
+
+sig MobileDevice extends NodeType {}
+abstract sig Backend extends NodeType {}
+sig ConnectedDevice extends NodeType {
+   implements: some ConnectedDeviceCapability
+}
 sig Cloud extends Backend {}
+sig Edge extends Backend {}
 
-//enum Capability {Storage, Processing, RemoteAdmin}
-
-enum Capability {GatewayFunctionality, BatterySource, IntegratedSensors, IntegratedActuators, WirelessProtocols, WiredProtocols, CloudServer, API, IFTTT, WebBrowserAccessibility, SmartphoneAccessibility, RemoteAccess}
+enum ConnectedDeviceCapability {GatewayFunctionality, BatterySource, IntegratedSensors, IntegratedActuators, WirelessProtocols, WiredProtocols, CloudServer, API, IFTTT, WebBrowserAccessibility, SmartphoneAccessibility, RemoteAccess}
 
 enum Role {DataSubject, DataController, DataUser}
-//enum Role {Owner, Family, Guest}
-
-//abstract sig Context {}
 
 // Data 
 sig Data {
  // is_in: some Context
 }
+
+// Context
+// sig Context {}
 
 // Location
 //sig Location {}
@@ -23,8 +27,7 @@ sig Data {
 // Nodes
 sig Node {
   curates: set Data,
-  is: one NodeType,
-  implements: some Capability
+   is: one NodeType//,
   //deployed: one Location
 }
 
@@ -59,21 +62,30 @@ fact "Policy" {
     all u: User |    
 	DataUser in u.is implies DataSubject not in u.is && DataController not in u.is 
 
-    // limit number of capabilities to 3 (for simplicity)
-    all n: Node |
-	#n.implements <= 3  
+    // limit number of capabilities to 3 
+    all c: ConnectedDevice |
+	#c.implements < 4     
 }
 
 fact "Home setup" {
     one n: Node | n.is = Cloud              	   // there must be a cloud
     one n: Node | n.is = MobileDevice    	   // there must be a mobile device
-    one n: Node | n.is = ConnectedDevice    // there must be a connected device
-    one n: Node | n.is = Gateway    		   // there must be a gateway device
+    //some n: Node | n.is = ConnectedDevice    // there must be a connected device
+    one c: ConnectedDevice |  c.implements = GatewayFunctionality
+    one c: ConnectedDevice |  c.implements = IntegratedActuators
+    no Edge
  
+     all u: User |   
+	DataController in u.is implies MobileDevice not in u.interacts.is  
+
+    one u: User | u.is = DataSubject 
+
     // constraints
     #User = 2
     #Link = 3
     #Data = 2
+    #Node = 4
+    #ConnectedDevice = 2
 }
 
 //////////////////////////////////////////////////////////////////////////////////
