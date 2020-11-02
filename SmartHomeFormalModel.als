@@ -52,7 +52,6 @@ sig Link {
 fact "Policy" {
     all x: Link | x.from != x.to  // no links from a host to itself
 
-    // make each role exclusive
     all u: User |   
 	DataSubject in u.is implies DataController not in u.is && DataUser not in u.is 
 
@@ -61,25 +60,22 @@ fact "Policy" {
 
     all u: User |    
 	DataUser in u.is implies DataSubject not in u.is && DataController not in u.is 
-
-    // limit number of capabilities to 3 
-    all c: ConnectedDevice |
-	#c.implements < 4     
+	
+    one u: User | u.is = DataSubject 	
+    
+     all u: User |   
+	DataController in u.is implies MobileDevice not in u.interacts.is      
 }
 
+// sample smart home instance
 fact "Home setup" {
-    one n: Node | n.is = Cloud              	   // there must be a cloud
-    one n: Node | n.is = MobileDevice    	   // there must be a mobile device
-    //some n: Node | n.is = ConnectedDevice    // there must be a connected device
+    one n: Node | n.is = Cloud              	   
+    one n: Node | n.is = MobileDevice    	 
+    //some n: Node | n.is = ConnectedDevice    
     one c: ConnectedDevice |  c.implements = GatewayFunctionality
     one c: ConnectedDevice |  c.implements = IntegratedActuators
     no Edge
  
-     all u: User |   
-	DataController in u.is implies MobileDevice not in u.interacts.is  
-
-    one u: User | u.is = DataSubject 
-
     // constraints
     #User = 2
     #Link = 3
