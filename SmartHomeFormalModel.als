@@ -4,14 +4,16 @@ abstract sig NodeType {}
 sig MobileDevice extends NodeType {}
 abstract sig Backend extends NodeType {}
 sig ConnectedDevice extends NodeType {
-   implements: some ConnectedDeviceCapability
+     implements: some ConnectedDeviceCapability
 }
 sig Cloud extends Backend {}
 sig Edge extends Backend {}
 
-enum ConnectedDeviceCapability {GatewayFunctionality, BatterySource, IntegratedSensors, IntegratedActuators, WirelessProtocols, WiredProtocols, CloudServer, API, IFTTT, WebBrowserAccessibility, SmartphoneAccessibility, RemoteAccess}
+abstract sig Role {}
+one sig DataSubject, DataController, DataUser extends Role {}
 
-enum Role {DataSubject, DataController, DataUser}
+abstract sig ConnectedDeviceCapability {} 
+one sig GatewayFunctionality, BatterySource, IntegratedSensors, IntegratedActuators, WirelessProtocols, WiredProtocols, CloudServer, API, IFTTT, WebBrowserAccessibility, SmartphoneAccessibility, RemoteAccess extends ConnectedDeviceCapability {}
 
 // Data 
 sig Data {
@@ -60,28 +62,37 @@ fact "Policy" {
 
     all u: User |    
 	DataUser in u.is implies DataSubject not in u.is && DataController not in u.is 
-	
-    one u: User | u.is = DataSubject 	
     
      all u: User |   
 	DataController in u.is implies MobileDevice not in u.interacts.is      
 }
 
-// sample smart home instance
+
+
+////////////////////////////// SMART HOME MODEL INSTANTIATION ///////////////////
+sig ConnectedToy extends ConnectedDevice {}
+sig VideoDoorbell extends ConnectedDevice {}
+sig Parent, Child, ServiceProvider extends User {}
+
 fact "Home setup" {
-    one n: Node | n.is = Cloud              	   
-    one n: Node | n.is = MobileDevice    	 
-    //some n: Node | n.is = ConnectedDevice    
-    one c: ConnectedDevice |  c.implements = GatewayFunctionality
-    one c: ConnectedDevice |  c.implements = IntegratedActuators
+    // Nodes and their capabilities
+    one n: Node | n.is = Cloud      	   
+    one n: Node | n.is = MobileDevice       	 
+    one n: Node | n.is = ConnectedToy && n.is.implements = IntegratedSensors + IntegratedActuators + BatterySource + WirelessProtocols + CloudServer 
+    one n: Node | n.is = VideoDoorbell  && n.is.implements = IntegratedSensors + IntegratedActuators + BatterySource + WirelessProtocols + RemoteAccess + GatewayFunctionality + SmartphoneAccessibility + IFTTT    
+
+    // Users and their roles
+    one u1:Child | u1.interacts.is = ConnectedToy && u1.is = DataSubject 
+    one u2:Parent | u2.interacts.is = VideoDoorbell + MobileDevice && u2.is = DataSubject
+    one u3:ServiceProvider | u3.interacts.is = Cloud && u3.is = DataController 
+
     no Edge
- 
+     
+    no Data // for diagram's sake
     // constraints
-    #User = 2
-    #Link = 3
-    #Data = 2
+    #User = 3
+    #Link = 4
     #Node = 4
-    #ConnectedDevice = 2
 }
 
 //////////////////////////////////////////////////////////////////////////////////
